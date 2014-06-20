@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="sens-o-matic" default="help">
+	<property name="build.dir" value="build" />
+	<property name="dist.dir" value="dist" />
+
+	<property name="src.dir" value="src/main/java" />
+	<property name="src.html.dir" value="src/main/html" />
+
+	<path id="compile.classpath">
+		<fileset dir="lib/runtime">
+			<include name="*.jar"/>
+		</fileset>
+	</path>
+
+	<target name="init">
+		<mkdir dir="${build.dir}" />
+		<mkdir dir="${dist.dir}" />
+	</target>
+
+	<target name="clean">
+		<delete failonerror="false">
+			<fileset dir="${build.dir}">
+				<include name="**/*.*" />
+			</fileset>
+		</delete>
+		<delete failonerror="false">
+			<fileset dir="${dist.dir}">
+				<include name="**/*.*" />
+			</fileset>
+		</delete>
+	</target>
+
+	<target name="compile" depends="clean,init" description="compile the code">
+		<javac srcdir="${src.dir}" destdir="${build.dir}" debug="on" includeantruntime="false" compiler="javac1.6" classpathref="compile.classpath" />
+	</target>
+
+	<target name="dist" depends="clean,init,compile" description="build the standalone binary distributable">
+		<jar destfile="${dist.dir}/${ant.project.name}.jar">
+			<fileset dir="${build.dir}">
+				<include name="**/*.class" />
+			</fileset>
+		</jar>
+	</target>
+
+	<target name="help" description="hopefully helpful help">
+		<echo>
+type:
+	ant -p
+to see a complete list of ant targets
+	</echo>
+	</target>
+</project>
