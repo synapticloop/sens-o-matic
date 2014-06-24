@@ -20,9 +20,10 @@ public class JsonUtils {
 	private static final String DATE_FORMAT_MONTH = "yyyy-mm";
 	private static final String DATE_FORMAT_YEAR = "yyyy";
 
-	private static final String[] REQUIRED_KEYS = { "name", "team", "application", "interval", "categories" };
+	private static final String[] REQUIRED_KEYS = { "name", "team", "application", "interval", "categories", "component" };
 	private static final String[] REQUIRED_TIME_KEYS = { "time" };
 	private static final String[] REQUIRED_OBJECT_KEYS = { "payload" };
+	private static final String[] OPTIONAL_LONG_KEYS = { "interval" };
 
 	/**
 	 * Return the MD5 hash for the JSON if possible, else null if it couldn't be
@@ -40,15 +41,17 @@ public class JsonUtils {
 		stringBuilder.append(jsonObject.getString("team"));
 		stringBuilder.append(":");
 		stringBuilder.append(jsonObject.getString("application"));
+		stringBuilder.append(":");
+		stringBuilder.append(jsonObject.getString("component"));
 
 		try {
 			MessageDigest messageDigest = MessageDigest.getInstance("MD5");
 			byte[] digest = messageDigest.digest(stringBuilder.toString().getBytes());
-			StringBuilder sb = new StringBuilder(2*digest.length);
+			StringBuilder digestStringBuilder = new StringBuilder(2*digest.length);
 			for(byte b : digest) {
-				sb.append(String.format("%02x", b&0xff));
+				digestStringBuilder.append(String.format("%02x", b&0xff));
 			}
-			return(sb.toString());
+			return(digestStringBuilder.toString());
 		} catch (NoSuchAlgorithmException nsaex) {
 			// shouldn't happen
 			nsaex.printStackTrace();
@@ -57,6 +60,14 @@ public class JsonUtils {
 		return(null);
 	}
 
+	/**
+	 * Get the MD5 hash for JSON from a string - convert it to a JSON object first
+	 * then hash it.
+	 *
+	 * @param payload the JSON string payload
+	 *
+	 * @return the MD5 hash - or null
+	 */
 	public static String getHashForJson(String payload) {
 		try {
 			JSONObject jsonObject = new JSONObject(payload);
@@ -82,6 +93,7 @@ public class JsonUtils {
 	 *     "name": "Unique Name for the feed",
 	 *     "team": "Team_Name",
 	 *     "application": "application_name",
+	 *     "component": "component_name",
 	 *     "time": "yyyy-MM-dd HH:mm:ss",
 	 *     "interval": "#seconds per interval",
 	 *     "categories": [
@@ -126,7 +138,7 @@ public class JsonUtils {
 		} catch(JSONException jsonex) {
 			return(HttpUtils.BadRequest("COULD NOT PARSE JSON '" + json + "'."));
 		}
-		return(HttpUtils.OKResponse("OK"));
+		return(HttpUtils.ok("OK"));
 	}
 
 	private static Response validateFullJson(JSONObject jsonObject) {
@@ -135,7 +147,17 @@ public class JsonUtils {
 				return(HttpUtils.BadRequest("MISSING FIELD '" + REQUIRED_KEYS[i] + "'."));
 			}
 		}
-		return(HttpUtils.OKResponse("OK"));
+
+		for (int i = 0; i < OPTIONAL_LONG_KEYS.length; i++) {
+			try {
+				jsonObject.optLong(OPTIONAL_LONG_KEYS[i]);
+			} catch(JSONException jsonex) {
+				return(HttpUtils.BadRequest("INVALID LONG VALUE FOR FIELD '" + OPTIONAL_LONG_KEYS[i] + "'."));
+			}
+		}
+
+
+		return(HttpUtils.ok("OK"));
 	}
 
 	/**
