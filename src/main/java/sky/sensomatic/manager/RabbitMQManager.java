@@ -14,10 +14,6 @@ public class RabbitMQManager {
 	private static String password = null;
 	private static String queueName = null;
 
-	private static String managerHost = null;
-	private static String managerVirtualHost = null;
-	private static String managerUsername = null;
-	private static String managerPassword = null;
 	private static String managerQueueName = null;
 
 	public static void initialise() {
@@ -27,10 +23,6 @@ public class RabbitMQManager {
 		RabbitMQManager.password = PropertyManager.getRabbitMQPassword();
 		RabbitMQManager.queueName = PropertyManager.getRabbitMQQueueName();
 
-		RabbitMQManager.managerHost = PropertyManager.getRabbitMQManagerHost();
-		RabbitMQManager.managerVirtualHost = PropertyManager.getRabbitMQManagerVHost();
-		RabbitMQManager.managerUsername = PropertyManager.getRabbitMQManagerUsername();
-		RabbitMQManager.managerPassword = PropertyManager.getRabbitMQManagerPassword();
 		RabbitMQManager.managerQueueName = PropertyManager.getRabbitMQManagerQueueName();
 	}
 
@@ -43,16 +35,7 @@ public class RabbitMQManager {
 		return(factory);
 	}
 
-	public static ConnectionFactory getManagerConnectionFactory() {
-		ConnectionFactory factory = new ConnectionFactory();
-		factory.setHost(managerHost);
-		factory.setVirtualHost(managerVirtualHost);
-		factory.setUsername(managerUsername);
-		factory.setPassword(managerPassword);
-		return(factory);
-	}
-
-	public static boolean pushMessage(String payload) {
+	private static boolean pushMessage(String queueName, String payload) throws IllegalStateException {
 		// pump the payload onto the rabbit MQ
 		ConnectionFactory factory = getConnectionFactory();
 
@@ -75,27 +58,12 @@ public class RabbitMQManager {
 		return(true);
 	}
 
-	public static boolean pushManagerMessage(String payload) {
-		// pump the payload onto the manager rabbit MQ
-		ConnectionFactory factory = getManagerConnectionFactory();
+	public static boolean pushMessage(String payload) {
+		return(pushMessage(queueName, payload));
+	}
 
-		Connection connection = null;
-		Channel channel = null;
-		try {
-			connection = factory.newConnection();
-			channel = connection.createChannel();
-			channel.queueDeclare(managerQueueName, false, false, false, null);
-			String message = payload;
-			channel.basicPublish("", managerQueueName, null, message.getBytes());
-		} catch (IOException ioex) {
-			return(false);
-		} finally {
-			if(null != connection) {
-				try { channel.close(); } catch (IOException ioex) { channel = null; }
-				try { connection.close(); } catch (IOException ioex) { connection = null; }
-			}
-		}
-		return(true);
+	public static boolean pushManagerMessage(String payload) {
+		return(pushMessage(managerQueueName, payload));
 	}
 
 	public static String getQueueName() {

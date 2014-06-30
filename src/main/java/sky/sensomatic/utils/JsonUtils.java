@@ -13,12 +13,12 @@ import fi.iki.elonen.NanoHTTPD.Response;
 public class JsonUtils {
 	private static final String OPTIONS_JSON_HASH = "hash";
 
-	private static final String DATE_FORMAT_SECOND = "yyyy-mm-dd HH:mm:ss";
-	private static final String DATE_FORMAT_MINUTE = "yyyy-mm-dd HH:mm";
-	private static final String DATE_FORMAT_HOUR = "yyyy-mm-dd HH";
-	private static final String DATE_FORMAT_DAY = "yyyy-mm-dd";
-	private static final String DATE_FORMAT_MONTH = "yyyy-mm";
-	private static final String DATE_FORMAT_YEAR = "yyyy";
+	public static final SimpleDateFormat SIMPLE_DATE_FORMAT_SECOND = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+	public static final SimpleDateFormat SIMPLE_DATE_FORMAT_MINUTE = new SimpleDateFormat("yyyy-MM-dd HH:mm");
+	public static final SimpleDateFormat SIMPLE_DATE_FORMAT_HOUR = new SimpleDateFormat("yyyy-MM-dd HH");
+	public static final SimpleDateFormat SIMPLE_DATE_FORMAT_DAY = new SimpleDateFormat("yyyy-MM-dd");
+	public static final SimpleDateFormat SIMPLE_DATE_FORMAT_MONTH = new SimpleDateFormat("yyyy-MM");
+	public static final SimpleDateFormat SIMPLE_DATE_FORMAT_YEAR = new SimpleDateFormat("yyyy");
 
 	private static final String[] REQUIRED_KEYS = { "name", "team", "application", "interval", "categories", "component" };
 	private static final String[] REQUIRED_TIME_KEYS = { "time" };
@@ -94,12 +94,10 @@ public class JsonUtils {
 	 *     "team": "Team_Name",
 	 *     "application": "application_name",
 	 *     "component": "component_name",
-	 *     "time": "yyyy-MM-dd HH:mm:ss",
 	 *     "interval": "#seconds per interval",
 	 *     "categories": [
 	 *       "category_one", "category_two", "category_three"
-	 *     ],
-	 *     "payload": {<any_valid_json_format>}
+	 *     ]
 	 *   }
 	 *
 	 * @param json  The json to be validated
@@ -112,51 +110,48 @@ public class JsonUtils {
 			JSONObject jsonObject = new JSONObject(json);
 			// there are one of two possible json payloads, one with the hash, and
 			// the other with the full request
-			String hashCheck = jsonObject.optString(OPTIONS_JSON_HASH);
-
-			// validate keys that are needed for both versions
-			for (int i = 0; i < REQUIRED_TIME_KEYS.length; i++) {
-				String timeKey = jsonObject.optString(REQUIRED_TIME_KEYS[i]);
-				if(null == timeKey || !isValidDateTimeFormat(timeKey)) {
-					return(HttpUtils.BadRequest("MISSING OR INVALID DATE/TIME FIELD '" + timeKey + "'."));
-				}
-			}
-
-			for (int i = 0; i < REQUIRED_OBJECT_KEYS.length; i++) {
-				String requiredKey = REQUIRED_OBJECT_KEYS[i];
-				// we need to ensure that the object is correctly formatted
-				if(null == jsonObject.optJSONObject(requiredKey)) {
-					return(HttpUtils.BadRequest("MISSING FIELD '" + requiredKey + "'."));
-				}
-			}
+			String hashCheck = jsonObject.optString(OPTIONS_JSON_HASH, null);
 
 			if(null == hashCheck) {
-				// must be a full registration
-				return(validateFullJson(jsonObject));
+				// must be a registration
+				for (int i = 0; i < REQUIRED_KEYS.length; i++) {
+					if(null == jsonObject.opt(REQUIRED_KEYS[i])) {
+						return(HttpUtils.BadRequest("MISSING FIELD '" + REQUIRED_KEYS[i] + "'."));
+					}
+				}
+
+				for (int i = 0; i < OPTIONAL_LONG_KEYS.length; i++) {
+					try {
+						jsonObject.optLong(OPTIONAL_LONG_KEYS[i]);
+					} catch(JSONException jsonex) {
+						return(HttpUtils.BadRequest("INVALID LONG VALUE FOR FIELD '" + OPTIONAL_LONG_KEYS[i] + "'."));
+					}
+				}
+			} else {
+				// with a hash - we only need a time and payload
+				for (int i = 0; i < REQUIRED_TIME_KEYS.length; i++) {
+					String timeKey = jsonObject.optString(REQUIRED_TIME_KEYS[i]);
+					if(null == timeKey || !isValidDateTimeFormat(timeKey)) {
+						return(HttpUtils.BadRequest("MISSING OR INVALID DATE/TIME FIELD '" + timeKey + "'."));
+					}
+				}
+
+				for (int i = 0; i < REQUIRED_OBJECT_KEYS.length; i++) {
+					String requiredKey = REQUIRED_OBJECT_KEYS[i];
+					// we need to ensure that the object is correctly formatted
+					if(null == jsonObject.optJSONObject(requiredKey)) {
+						return(HttpUtils.BadRequest("MISSING FIELD '" + requiredKey + "'."));
+					}
+				}
 			}
+
+			// validate keys that are needed for both versions
+
+
 
 		} catch(JSONException jsonex) {
 			return(HttpUtils.BadRequest("COULD NOT PARSE JSON '" + json + "'."));
 		}
-		return(HttpUtils.ok("OK"));
-	}
-
-	private static Response validateFullJson(JSONObject jsonObject) {
-		for (int i = 0; i < REQUIRED_KEYS.length; i++) {
-			if(null == jsonObject.opt(REQUIRED_KEYS[i])) {
-				return(HttpUtils.BadRequest("MISSING FIELD '" + REQUIRED_KEYS[i] + "'."));
-			}
-		}
-
-		for (int i = 0; i < OPTIONAL_LONG_KEYS.length; i++) {
-			try {
-				jsonObject.optLong(OPTIONAL_LONG_KEYS[i]);
-			} catch(JSONException jsonex) {
-				return(HttpUtils.BadRequest("INVALID LONG VALUE FOR FIELD '" + OPTIONAL_LONG_KEYS[i] + "'."));
-			}
-		}
-
-
 		return(HttpUtils.ok("OK"));
 	}
 
@@ -183,27 +178,27 @@ public class JsonUtils {
 			switch(date.length()) {
 			case 4:
 				// yearly stats
-				new SimpleDateFormat(DATE_FORMAT_YEAR).parse(date);
+				SIMPLE_DATE_FORMAT_YEAR.parse(date);
 				return(true);
 			case 7:
 				// monthly stats
-				new SimpleDateFormat(DATE_FORMAT_MONTH).parse(date);
+				SIMPLE_DATE_FORMAT_MONTH.parse(date);
 				return(true);
 			case 10:
 				// daily stats
-				new SimpleDateFormat(DATE_FORMAT_DAY).parse(date);
+				SIMPLE_DATE_FORMAT_DAY.parse(date);
 				return(true);
 			case 13:
 				// hourly stats
-				new SimpleDateFormat(DATE_FORMAT_HOUR).parse(date);
+				SIMPLE_DATE_FORMAT_HOUR.parse(date);
 				return(true);
 			case 16:
 				// minutely stats
-				new SimpleDateFormat(DATE_FORMAT_MINUTE).parse(date);
+				SIMPLE_DATE_FORMAT_MINUTE.parse(date);
 				return(true);
 			case 19:
 				// seconds stats
-				new SimpleDateFormat(DATE_FORMAT_SECOND).parse(date);
+				SIMPLE_DATE_FORMAT_SECOND.parse(date);
 				return(true);
 			default:
 				return(false);
@@ -212,6 +207,38 @@ public class JsonUtils {
 			return(false);
 		} catch(NumberFormatException nfex) {
 			return(false);
+		}
+	}
+
+	public static long convertTime(String date) {
+		// 2014-01-01 13:45:23
+		try {
+			switch(date.length()) {
+			case 4:
+				// yearly stats
+				return(SIMPLE_DATE_FORMAT_YEAR.parse(date).getTime());
+			case 7:
+				// monthly stats
+				return(SIMPLE_DATE_FORMAT_MONTH.parse(date).getTime());
+			case 10:
+				// daily stats
+				return(SIMPLE_DATE_FORMAT_DAY.parse(date).getTime());
+			case 13:
+				// hourly stats
+				return(SIMPLE_DATE_FORMAT_HOUR.parse(date).getTime());
+			case 16:
+				// minutely stats
+				return(SIMPLE_DATE_FORMAT_MINUTE.parse(date).getTime());
+			case 19:
+				// seconds stats
+				return(SIMPLE_DATE_FORMAT_SECOND.parse(date).getTime());
+			default:
+				return(-1);
+			}
+		} catch (ParseException pex) {
+			return(-1);
+		} catch(NumberFormatException nfex) {
+			return(-1);
 		}
 	}
 }
