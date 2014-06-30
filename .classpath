@@ -5,5 +5,10 @@
 	<classpathentry kind="lib" path="lib/runtime/commons-cli-1.1.jar"/>
 	<classpathentry kind="lib" path="lib/runtime/commons-io-1.2.jar"/>
 	<classpathentry kind="lib" path="lib/runtime/rabbitmq-client.jar"/>
+	<classpathentry kind="lib" path="lib/runtime/cassandra-driver-core-2.0.1.jar"/>
+	<classpathentry kind="lib" path="lib/runtime/guava-16.0.1.jar"/>
+	<classpathentry kind="lib" path="lib/runtime/metrics-core-3.0.2.jar"/>
+	<classpathentry kind="lib" path="lib/runtime/netty-3.9.0.Final.jar"/>
+	<classpathentry kind="lib" path="lib/runtime/slf4j-api-1.7.5.jar"/>
 	<classpathentry kind="output" path="build-eclipse"/>
 </classpath>
